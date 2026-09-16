@@ -1,0 +1,19 @@
+// Prisma schema for fantasy-mcp.
+// This is scaffolding: the only model here is a throwaway placeholder that
+// proves migrations create tables. Replace HealthCheck with real models
+// (caching, tracked leagues, snapshots, sync metadata) in a later session.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts, not here.
+datasource db {
+  provider = "postgresql"
+}
+
+// Throwaway placeholder. Safe to delete once real models exist.
+model HealthCheck {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+}

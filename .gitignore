@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+.env
+.env.local
+.DS_Store
+*.log
+
+# Prisma custom client output (used only if the fallback generator is needed)
+src/generated

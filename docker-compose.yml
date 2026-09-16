@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fantasy-mcp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fantasy
+      POSTGRES_PASSWORD: fantasy
+      POSTGRES_DB: fantasy
+    ports:
+      - "5432:5432"
+    volumes:
+      - fantasy_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fantasy -d fantasy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  fantasy_pgdata:
