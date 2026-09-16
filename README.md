@@ -37,6 +37,7 @@ Environment variables (see `.env.example`):
 | `HOST` | `127.0.0.1` | Bind address |
 | `LOG_LEVEL` | `info` | Fastify/pino log level |
 | `SLEEPER_API_BASE_URL` | `https://api.sleeper.app/v1` | Sleeper API base (override to point at a stub) |
+| `JWT_SECRET` | — (required) | HS256 signing secret for auth tokens (min 32 chars); rotate to revoke all tokens |
 
 ## Run
 
@@ -50,9 +51,9 @@ The server listens on `http://$HOST:$PORT`. MCP is at `POST /mcp` (auth required
 
 ## Authentication
 
-Every `POST /mcp` request needs an API key. You get one by registering yourself once.
+Every `POST /mcp` request needs a token. You get one by registering yourself once. The token is a signed JWT that contains your identity, so the server authenticates each request by verifying the signature. No database lookup happens on the auth path.
 
-Identity is anchored on your **Sleeper user_id**, which we resolve from your Sleeper username. Sleeper has no global "team ID" — a `roster_id` is scoped to a single league — so the username is what you supply and the permanent `user_id` is what we store.
+Identity is anchored on your **Sleeper user_id**, which we resolve from your Sleeper username. Sleeper has no global "team ID" (a `roster_id` is scoped to a single league), so the username is what you supply and the permanent `user_id` is what we store.
 
 Register (all four fields are required):
 
@@ -62,34 +63,36 @@ curl -sS -X POST http://127.0.0.1:3000/register \
   -d '{"firstName":"Alex","lastName":"H","email":"alex@example.com","sleeperUsername":"your_sleeper_username"}'
 ```
 
-The response contains your API key **once** — store it, it isn't recoverable:
+The response contains your token:
 
 ```json
-{ "apiKey": "fmcp_…", "user": { "id": "…", "sleeperUserId": "…", "displayName": "…" } }
+{ "token": "eyJhbGci…", "user": { "id": "…", "sleeperUserId": "…", "displayName": "…" } }
 ```
 
-Response codes: `201` created, `400` invalid body, `422` unknown Sleeper username, `409` email or Sleeper user already registered. The key is stored only as a hash.
+Response codes: `201` created, `400` invalid body, `422` unknown Sleeper username, `409` email or Sleeper user already registered.
 
-Then call `/mcp` with the key in the `Authorization` header (the `Accept` header must list both types):
+Then call `/mcp` with the token in the `Authorization` header (the `Accept` header must list both types):
 
 ```bash
 curl -sS -X POST http://127.0.0.1:3000/mcp \
-  -H 'Authorization: Bearer fmcp_…' \
+  -H 'Authorization: Bearer eyJhbGci…' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
+Tokens are long-lived and don't expire. They're signed with `JWT_SECRET`; **rotating that value invalidates every issued token at once**, which is the revocation mechanism (there is no per-token revocation). The token holds a snapshot of your name, email, and Sleeper display name as of registration, readable by anyone who has the token (it's signed, not encrypted), so treat it like a password.
+
 ### MCP client config
 
-Streamable HTTP MCP clients pass custom headers, so the key rides in `Authorization`:
+Streamable HTTP MCP clients pass custom headers, so the token rides in `Authorization`:
 
 ```json
 {
   "mcpServers": {
     "fantasy": {
       "url": "https://<host>/mcp",
-      "headers": { "Authorization": "Bearer fmcp_<your key>" }
+      "headers": { "Authorization": "Bearer eyJhbGci<your token>" }
     }
   }
 }
@@ -125,8 +128,8 @@ src/
   config/env.ts     zod-validated environment config
   db/client.ts      PrismaClient on the pg driver adapter
   auth/
-    apiKey.ts       generate / hash / prefix API keys
-    authenticate.ts resolve an Authorization header to a user
+    token.ts        issue / verify signed JWTs
+    authenticate.ts resolve an Authorization header to a user (verifies the token)
   routes/
     register.ts     POST /register
   sleeper/

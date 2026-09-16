@@ -42,8 +42,6 @@ function dbRow() {
     sleeperUserId: "12345",
     sleeperUsername: "alexh",
     displayName: "AlexH",
-    apiKeyHash: "hash",
-    apiKeyPrefix: "fmcp_abcdef",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -85,9 +83,9 @@ it("returns 201 with an API key on success", async () => {
   expect(res.statusCode).toBe(201);
 
   const body = res.json();
-  expect(body.apiKey).toMatch(/^fmcp_/);
+  // A signed JWT: three base64url segments.
+  expect(body.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
   expect(body.user.sleeperUserId).toBe("12345");
-  expect(body.user).not.toHaveProperty("apiKeyHash");
 
   // Email was normalized to lowercase before persisting.
   expect(create).toHaveBeenCalledWith(

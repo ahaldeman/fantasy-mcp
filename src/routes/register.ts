@@ -2,7 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { apiKeyPrefix, generateApiKey, hashApiKey } from "../auth/apiKey.js";
+import type { AuthUser } from "../auth/authenticate.js";
+import { issueToken } from "../auth/token.js";
 import { prisma } from "../db/client.js";
 import { getUserByUsername } from "../sleeper/client.js";
 
@@ -51,8 +52,6 @@ export function registerRoutes(app: FastifyInstance): void {
       return reply.code(409).send({ error: `A user with this ${field} already exists` });
     }
 
-    const apiKey = generateApiKey();
-
     try {
       const user = await prisma.user.create({
         data: {
@@ -62,23 +61,21 @@ export function registerRoutes(app: FastifyInstance): void {
           sleeperUserId: sleeperUser.user_id,
           sleeperUsername: sleeperUser.username,
           displayName: sleeperUser.display_name || sleeperUser.username,
-          apiKeyHash: hashApiKey(apiKey),
-          apiKeyPrefix: apiKeyPrefix(apiKey),
         },
       });
 
-      return reply.code(201).send({
-        apiKey,
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          sleeperUserId: user.sleeperUserId,
-          sleeperUsername: user.sleeperUsername,
-          displayName: user.displayName,
-        },
-      });
+      const authUser: AuthUser = {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        sleeperUserId: user.sleeperUserId,
+        sleeperUsername: user.sleeperUsername,
+        displayName: user.displayName,
+      };
+      const token = await issueToken(authUser);
+
+      return reply.code(201).send({ token, user: authUser });
     } catch (err) {
       // Race-safe backstop: a concurrent request may have inserted first.
       if (

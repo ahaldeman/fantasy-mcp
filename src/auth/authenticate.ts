@@ -1,8 +1,7 @@
-import { prisma } from "../db/client.js";
-import { hashApiKey } from "./apiKey.js";
+import { verifyToken } from "./token.js";
 
-// The authenticated identity handed to the MCP layer. Deliberately excludes
-// the API key hash and other secrets — only what tools need to act as the user.
+// The authenticated identity handed to the MCP layer. Reconstructed entirely
+// from the signed token, so authentication reads no database.
 export interface AuthUser {
   id: string;
   firstName: string;
@@ -24,9 +23,9 @@ function parseBearer(authorizationHeader: string | undefined): string | null {
   return token;
 }
 
-// Resolve an Authorization header to a user, or null if it's missing,
-// malformed, or doesn't match a stored key. A missing/malformed header never
-// hits the database.
+// Resolve an Authorization header to a user by verifying the token's
+// signature. Returns null if the header is missing, malformed, or the token
+// doesn't verify. No database lookup.
 export async function authenticateRequest(
   authorizationHeader: string | undefined,
 ): Promise<AuthUser | null> {
@@ -34,21 +33,5 @@ export async function authenticateRequest(
   if (token === null) {
     return null;
   }
-
-  const user = await prisma.user.findUnique({
-    where: { apiKeyHash: hashApiKey(token) },
-  });
-  if (user === null) {
-    return null;
-  }
-
-  return {
-    id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    sleeperUserId: user.sleeperUserId,
-    sleeperUsername: user.sleeperUsername,
-    displayName: user.displayName,
-  };
+  return verifyToken(token);
 }

@@ -15,6 +15,9 @@ const envSchema = z.object({
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .default("info"),
   SLEEPER_API_BASE_URL: z.string().min(1).default("https://api.sleeper.app/v1"),
+  // HS256 signing secret for auth tokens. Rotating this invalidates every
+  // issued token at once (the revocation escape hatch). Min 32 chars.
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
 });
 
 export type Env = z.infer<typeof envSchema>;

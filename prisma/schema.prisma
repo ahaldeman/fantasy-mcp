@@ -10,8 +10,9 @@ datasource db {
 }
 
 // A registered person/team. Identity is anchored on the Sleeper user_id
-// (permanent); username/displayName are mutable Sleeper metadata. The issued
-// API key is stored only as a hash and looked up per authenticated MCP request.
+// (permanent); username/displayName are mutable Sleeper metadata. Auth uses a
+// self-contained signed JWT, so no credential is stored here — this row is the
+// account record and the source of uniqueness (email, sleeperUserId).
 model User {
   id              String   @id @default(cuid())
   firstName       String
@@ -20,8 +21,6 @@ model User {
   sleeperUserId   String   @unique
   sleeperUsername String
   displayName     String
-  apiKeyHash      String   @unique
-  apiKeyPrefix    String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

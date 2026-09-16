@@ -9,6 +9,7 @@ export default defineConfig({
     // the config layer doesn't fail. Real DB tests would use a live URL.
     env: {
       DATABASE_URL: "postgresql://fantasy:fantasy@localhost:5432/fantasy?schema=public",
+      JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
     },
   },
 });
