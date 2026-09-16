@@ -1,14 +1,25 @@
 import { expect, it } from "vitest";
 
+import type { AuthUser } from "../src/auth/authenticate.js";
 import { pingHandler } from "../src/mcp/tools/ping.js";
 
-it("echoes a default reply when no message is given", () => {
-  const result = pingHandler({});
+const authUser: AuthUser = {
+  id: "u1",
+  firstName: "Alex",
+  lastName: "H",
+  email: "alex@example.com",
+  sleeperUserId: "123",
+  sleeperUsername: "alexh",
+  displayName: "AlexH",
+};
+
+it("echoes a default reply naming the user when no message is given", () => {
+  const result = pingHandler({}, authUser);
   expect(result.content[0]?.type).toBe("text");
-  expect(result.content[0]?.text).toMatch(/^pong \(/);
+  expect(result.content[0]?.text).toMatch(/^pong for AlexH \(/);
 });
 
-it("echoes the provided message", () => {
-  const result = pingHandler({ message: "hello" });
-  expect(result.content[0]?.text).toMatch(/^pong: hello \(/);
+it("echoes the provided message and the user", () => {
+  const result = pingHandler({ message: "hello" }, authUser);
+  expect(result.content[0]?.text).toMatch(/^pong: hello for AlexH \(/);
 });

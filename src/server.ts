@@ -1,8 +1,10 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
+import { authenticateRequest } from "./auth/authenticate.js";
 import { env } from "./config/env.js";
 import { createMcpServer } from "./mcp/server.js";
+import { registerRoutes } from "./routes/register.js";
 
 // JSON-RPC error returned for transports/methods we don't support in stateless mode.
 function methodNotAllowed() {
@@ -24,9 +26,22 @@ export function buildServer(): FastifyInstance {
   // Plain liveness check. No MCP handshake required, easy to test with inject().
   app.get("/health", async () => ({ status: "ok" }));
 
-  // Stateless Streamable HTTP: a fresh MCP server + transport per POST.
+  // Open route: register to get an API key.
+  registerRoutes(app);
+
+  // Stateless Streamable HTTP: a fresh MCP server + transport per POST, built
+  // only after the request is authenticated with a valid API key.
   app.post("/mcp", async (request, reply) => {
-    const server = createMcpServer();
+    const user = await authenticateRequest(request.headers.authorization);
+    if (user === null) {
+      return reply.code(401).header("WWW-Authenticate", "Bearer").send({
+        jsonrpc: "2.0",
+        error: { code: -32001, message: "Unauthorized" },
+        id: null,
+      });
+    }
+
+    const server = createMcpServer(user);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });

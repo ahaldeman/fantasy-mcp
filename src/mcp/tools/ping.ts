@@ -1,8 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
+import type { AuthUser } from "../../auth/authenticate.js";
+
 // Example tool used to verify the server end to end. Future Sleeper tools
-// follow the same shape: a zod input schema plus a handler returning MCP content.
+// follow the same shape: a zod input schema plus a handler that also has the
+// authenticated user in scope.
 export const pingInputShape = {
   message: z
     .string()
@@ -13,19 +16,19 @@ export const pingInputShape = {
 const pingArgs = z.object(pingInputShape);
 export type PingArgs = z.infer<typeof pingArgs>;
 
-export function pingHandler({ message }: PingArgs) {
+export function pingHandler({ message }: PingArgs, authUser: AuthUser) {
   const reply = message ? `pong: ${message}` : "pong";
   return {
     content: [
       {
         type: "text" as const,
-        text: `${reply} (${new Date().toISOString()})`,
+        text: `${reply} for ${authUser.displayName} (${new Date().toISOString()})`,
       },
     ],
   };
 }
 
-export function registerPingTool(server: McpServer): void {
+export function registerPingTool(server: McpServer, authUser: AuthUser): void {
   server.registerTool(
     "ping",
     {
@@ -33,6 +36,6 @@ export function registerPingTool(server: McpServer): void {
       description: "Health-check tool that echoes an optional message with a timestamp.",
       inputSchema: pingInputShape,
     },
-    pingHandler,
+    (args) => pingHandler(args, authUser),
   );
 }

@@ -14,6 +14,7 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .default("info"),
+  SLEEPER_API_BASE_URL: z.string().min(1).default("https://api.sleeper.app/v1"),
 });
 
 export type Env = z.infer<typeof envSchema>;

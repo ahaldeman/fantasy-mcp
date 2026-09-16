@@ -36,6 +36,7 @@ Environment variables (see `.env.example`):
 | `PORT` | `3000` | HTTP port |
 | `HOST` | `127.0.0.1` | Bind address |
 | `LOG_LEVEL` | `info` | Fastify/pino log level |
+| `SLEEPER_API_BASE_URL` | `https://api.sleeper.app/v1` | Sleeper API base (override to point at a stub) |
 
 ## Run
 
@@ -45,15 +46,53 @@ npm run dev              # tsx watch, reloads on change
 npm run build && npm start
 ```
 
-The server listens on `http://$HOST:$PORT`. MCP is at `POST /mcp`, and `GET /health` is a plain liveness check.
+The server listens on `http://$HOST:$PORT`. MCP is at `POST /mcp` (auth required), and `GET /health` is a plain liveness check.
 
-To exercise the endpoint directly (the `Accept` header must list both types):
+## Authentication
+
+Every `POST /mcp` request needs an API key. You get one by registering yourself once.
+
+Identity is anchored on your **Sleeper user_id**, which we resolve from your Sleeper username. Sleeper has no global "team ID" — a `roster_id` is scoped to a single league — so the username is what you supply and the permanent `user_id` is what we store.
+
+Register (all four fields are required):
+
+```bash
+curl -sS -X POST http://127.0.0.1:3000/register \
+  -H 'Content-Type: application/json' \
+  -d '{"firstName":"Alex","lastName":"H","email":"alex@example.com","sleeperUsername":"your_sleeper_username"}'
+```
+
+The response contains your API key **once** — store it, it isn't recoverable:
+
+```json
+{ "apiKey": "fmcp_…", "user": { "id": "…", "sleeperUserId": "…", "displayName": "…" } }
+```
+
+Response codes: `201` created, `400` invalid body, `422` unknown Sleeper username, `409` email or Sleeper user already registered. The key is stored only as a hash.
+
+Then call `/mcp` with the key in the `Authorization` header (the `Accept` header must list both types):
 
 ```bash
 curl -sS -X POST http://127.0.0.1:3000/mcp \
+  -H 'Authorization: Bearer fmcp_…' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+### MCP client config
+
+Streamable HTTP MCP clients pass custom headers, so the key rides in `Authorization`:
+
+```json
+{
+  "mcpServers": {
+    "fantasy": {
+      "url": "https://<host>/mcp",
+      "headers": { "Authorization": "Bearer fmcp_<your key>" }
+    }
+  }
+}
 ```
 
 ## Tests
@@ -82,11 +121,18 @@ npm run test:watch
 ```
 src/
   index.ts          entrypoint: load env, start Fastify, handle shutdown
-  server.ts         Fastify app: /health + /mcp
+  server.ts         Fastify app: /health + /register + /mcp (auth-guarded)
   config/env.ts     zod-validated environment config
   db/client.ts      PrismaClient on the pg driver adapter
+  auth/
+    apiKey.ts       generate / hash / prefix API keys
+    authenticate.ts resolve an Authorization header to a user
+  routes/
+    register.ts     POST /register
+  sleeper/
+    client.ts       Sleeper REST client (getUserByUsername)
   mcp/
-    server.ts       createMcpServer(): registers tools
+    server.ts       createMcpServer(authUser): registers tools
     tools/          one file per tool
 prisma/
   schema.prisma     datasource, generator, models

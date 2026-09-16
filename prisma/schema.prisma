@@ -1,7 +1,4 @@
 // Prisma schema for fantasy-mcp.
-// This is scaffolding: the only model here is a throwaway placeholder that
-// proves migrations create tables. Replace HealthCheck with real models
-// (caching, tracked leagues, snapshots, sync metadata) in a later session.
 
 generator client {
   provider = "prisma-client-js"
@@ -12,8 +9,19 @@ datasource db {
   provider = "postgresql"
 }
 
-// Throwaway placeholder. Safe to delete once real models exist.
-model HealthCheck {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+// A registered person/team. Identity is anchored on the Sleeper user_id
+// (permanent); username/displayName are mutable Sleeper metadata. The issued
+// API key is stored only as a hash and looked up per authenticated MCP request.
+model User {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String   @unique
+  sleeperUserId   String   @unique
+  sleeperUsername String
+  displayName     String
+  apiKeyHash      String   @unique
+  apiKeyPrefix    String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
