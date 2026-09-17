@@ -8,3 +8,6 @@ coverage
 
 # Prisma custom client output (used only if the fallback generator is needed)
 src/generated
+
+#plans directory for temporary Markdown planning files
+plans
