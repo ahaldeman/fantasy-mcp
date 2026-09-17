@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { toPlayerRow } from "../src/players/sync.js";
+import { toPlayerRow } from "../src/features/players/sync.js";
 import type { SleeperRawPlayer } from "../src/sleeper/client.js";
 
 it("maps a QB on a team", () => {

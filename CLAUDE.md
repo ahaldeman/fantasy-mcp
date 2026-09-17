@@ -20,12 +20,16 @@ npm run dev               # or: npm run build && npm start
 npm test
 ```
 
-The connection URL lives in `prisma.config.ts` (not `schema.prisma`); the Prisma client is built on `@prisma/adapter-pg` in `src/db/client.ts`. Nothing auto-loads `.env` — both the app and the Prisma config call Node's `process.loadEnvFile()`.
+The connection URL lives in `prisma.config.ts` (not `schema.prisma`); the Prisma client is built on `@prisma/adapter-pg` in `src/db/client.ts`. Nothing auto-loads `.env`, so both the app and the Prisma config call Node's `process.loadEnvFile()`.
 
 ## Conventions
 
 **Prefer required over optional (tell, don't ask).** Default parameters, object properties, and Prisma columns to required. Use optional/nullable only for genuine absence, and prefer a nullable return or input union over a `?`-optional.
-- Bad: `createMcpServer(authUser?: AuthUser)` — auth is always enforced first, so the value is always present.
+- Bad: `createMcpServer(authUser?: AuthUser)` (auth is always enforced first, so the value is always present).
 - Good: `createMcpServer(authUser: AuthUser)`.
 
 Full details and the allowed exceptions: @.claude/rules/typescript.md
+
+**Feature-first packages.** Each domain is a vertical slice under `src/features/<domain>/` holding its own source (Sleeper calls), repository (persistence/queries), sync (job logic), and tools (MCP), following the flow Sleeper -> internal domain -> MCP. Shared infra (`config`, `db`, the `sleeper` client, and the `mcp`/`jobs`/`server` composition roots) stays at the top of `src/`. A feature may import shared infra and another feature's repository, never another feature's tools/routes.
+
+Full details: @.claude/rules/structure.md

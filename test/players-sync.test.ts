@@ -20,7 +20,7 @@ vi.mock("../src/db/client.js", () => ({
   },
 }));
 
-import { syncPlayers } from "../src/players/sync.js";
+import { syncPlayers } from "../src/features/players/sync.js";
 import { prisma } from "../src/db/client.js";
 import { getAllPlayers } from "../src/sleeper/client.js";
 

@@ -1,10 +1,10 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
-import { authenticateRequest } from "./auth/authenticate.js";
 import { env } from "./config/env.js";
+import { authenticateRequest } from "./features/auth/authenticate.js";
+import { registerRoutes } from "./features/auth/register.js";
 import { createMcpServer } from "./mcp/server.js";
-import { registerRoutes } from "./routes/register.js";
 
 // JSON-RPC error returned for transports/methods we don't support in stateless mode.
 function methodNotAllowed() {

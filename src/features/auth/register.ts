@@ -2,10 +2,10 @@ import type { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import type { AuthUser } from "../auth/authenticate.js";
-import { issueToken } from "../auth/token.js";
-import { prisma } from "../db/client.js";
-import { getUserByUsername } from "../sleeper/client.js";
+import type { AuthUser } from "./authenticate.js";
+import { issueToken } from "./token.js";
+import { prisma } from "../../db/client.js";
+import { getUserByUsername } from "../../sleeper/client.js";
 
 const registerBody = z.object({
   firstName: z.string().trim().min(1),

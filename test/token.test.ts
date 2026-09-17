@@ -1,8 +1,8 @@
 import { SignJWT } from "jose";
 import { expect, it } from "vitest";
 
-import type { AuthUser } from "../src/auth/authenticate.js";
-import { issueToken, verifyToken } from "../src/auth/token.js";
+import type { AuthUser } from "../src/features/auth/authenticate.js";
+import { issueToken, verifyToken } from "../src/features/auth/token.js";
 
 const authUser: AuthUser = {
   id: "u1",

@@ -1,7 +1,7 @@
 import { PgBoss } from "pg-boss";
 
 import { env } from "../config/env.js";
-import { syncPlayers } from "../players/sync.js";
+import { syncPlayers } from "../features/players/sync.js";
 
 export const PLAYERS_SYNC_QUEUE = "players-sync";
 

@@ -1,5 +1,5 @@
 import { prisma } from "../db/client.js";
-import { syncPlayers } from "../players/sync.js";
+import { syncPlayers } from "../features/players/sync.js";
 
 // One-shot CLI: `npm run job:sync-players`. Runs the sync once and exits.
 // Handy for manual runs and as the entrypoint for an external scheduler.

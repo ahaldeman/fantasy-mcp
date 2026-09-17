@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import type { AuthUser } from "../src/auth/authenticate.js";
+import type { AuthUser } from "../src/features/auth/authenticate.js";
 import { pingHandler } from "../src/mcp/tools/ping.js";
 
 const authUser: AuthUser = {

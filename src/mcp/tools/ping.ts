@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import type { AuthUser } from "../../auth/authenticate.js";
+import type { AuthUser } from "../../features/auth/authenticate.js";
 
 // Example tool used to verify the server end to end. Future Sleeper tools
 // follow the same shape: a zod input schema plus a handler that also has the

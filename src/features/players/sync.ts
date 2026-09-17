@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
 
-import { env } from "../config/env.js";
-import { prisma } from "../db/client.js";
-import { getAllPlayers, type SleeperRawPlayer } from "../sleeper/client.js";
+import { env } from "../../config/env.js";
+import { prisma } from "../../db/client.js";
+import { getAllPlayers, type SleeperRawPlayer } from "../../sleeper/client.js";
 
 const CHUNK_SIZE = 1000;
 const TRANSACTION_TIMEOUT_MS = 60_000;

@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { z } from "zod";
 
-import { env } from "../config/env.js";
+import { env } from "../../config/env.js";
 import type { AuthUser } from "./authenticate.js";
 
 const ALG = "HS256";

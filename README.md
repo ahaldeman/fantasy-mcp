@@ -141,27 +141,29 @@ npm run test:watch
 
 ## Layout
 
+The code is organized feature-first: each domain is a vertical slice under `src/features/`, over thin shared infra and composition roots. See `.claude/rules/structure.md` for the full convention.
+
 ```
 src/
   index.ts          entrypoint: load env, start Fastify, handle shutdown
-  server.ts         Fastify app: /health + /register + /mcp (auth-guarded)
-  config/env.ts     zod-validated environment config
-  db/client.ts      PrismaClient on the pg driver adapter
-  auth/
-    token.ts        issue / verify signed JWTs
-    authenticate.ts resolve an Authorization header to a user (verifies the token)
-  routes/
-    register.ts     POST /register
+  server.ts         Fastify composition root: /health + feature routes + /mcp guard
+  config/env.ts     zod-validated environment config (shared infra)
+  db/client.ts      PrismaClient on the pg driver adapter (shared infra)
   sleeper/
-    client.ts       Sleeper REST client (getUserByUsername, getAllPlayers)
-  players/
-    sync.ts         syncPlayers(): snapshot + refresh the Player table
-  jobs/
-    scheduler.ts    pg-boss: schedules and runs the daily sync
-    runSyncPlayers.ts  one-shot CLI entrypoint
+    client.ts       low-level Sleeper HTTP client (getUserByUsername, getAllPlayers)
   mcp/
-    server.ts       createMcpServer(authUser): registers tools
-    tools/          one file per tool
+    server.ts       createMcpServer(authUser): registers each feature's tools
+    tools/          built-in example tools (ping)
+  jobs/
+    scheduler.ts    pg-boss: schedules and runs feature jobs
+    runSyncPlayers.ts  players-sync CLI entrypoint
+  features/
+    auth/
+      token.ts        issue / verify signed JWTs
+      authenticate.ts resolve an Authorization header to a user (verifies the token)
+      register.ts     POST /register route
+    players/
+      sync.ts         syncPlayers(): snapshot + refresh the Player table
 prisma/
   schema.prisma     datasource, generator, models
   migrations/       migration history
