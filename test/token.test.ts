@@ -11,6 +11,7 @@ const authUser: AuthUser = {
   email: "alex@example.com",
   sleeperUserId: "123",
   sleeperUsername: "alexh",
+  sleeperLeagueId: "L1",
   displayName: "AlexH",
 };
 

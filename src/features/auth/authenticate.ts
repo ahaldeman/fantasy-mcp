@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string;
   sleeperUserId: string;
   sleeperUsername: string;
+  sleeperLeagueId: string;
   displayName: string;
 }
 

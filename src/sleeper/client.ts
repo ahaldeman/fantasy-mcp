@@ -28,6 +28,29 @@ export async function getUserByUsername(
   };
 }
 
+// GET /v1/league/<league_id>/users. Returns the league's members, or an empty
+// array when the league doesn't exist (Sleeper sends a null body). Any non-OK
+// response is a real error and throws.
+export async function getLeagueUsers(
+  leagueId: string,
+): Promise<SleeperUser[]> {
+  const url = `${env.SLEEPER_API_BASE_URL}/league/${encodeURIComponent(leagueId)}/users`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Sleeper API error: ${res.status} ${res.statusText}`);
+  }
+
+  const body = (await res.json()) as SleeperUser[] | null;
+  if (body === null) {
+    return [];
+  }
+  return body.map((user) => ({
+    user_id: user.user_id,
+    username: user.username,
+    display_name: user.display_name,
+  }));
+}
+
 // GET /v1/user/<user_id>/leagues/nfl/<season>. Returns the user's leagues for
 // that season, or an empty array when they're in none. Any non-OK response is a
 // real error and throws.

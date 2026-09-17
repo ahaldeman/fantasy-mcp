@@ -19,6 +19,7 @@ const tokenClaims = z.object({
   email: z.string(),
   sleeperUserId: z.string(),
   sleeperUsername: z.string(),
+  sleeperLeagueId: z.string(),
   displayName: z.string(),
 });
 
@@ -31,6 +32,7 @@ export async function issueToken(user: AuthUser): Promise<string> {
     email: user.email,
     sleeperUserId: user.sleeperUserId,
     sleeperUsername: user.sleeperUsername,
+    sleeperLeagueId: user.sleeperLeagueId,
     displayName: user.displayName,
   })
     .setProtectedHeader({ alg: ALG })

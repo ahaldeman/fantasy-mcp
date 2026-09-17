@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 
 vi.mock("../src/sleeper/client.js", () => ({
   getUserByUsername: vi.fn(),
+  getLeagueUsers: vi.fn(),
 }));
 vi.mock("../src/db/client.js", () => ({
   prisma: {
@@ -16,9 +17,10 @@ vi.mock("../src/db/client.js", () => ({
 
 import { buildServer } from "../src/server.js";
 import { prisma } from "../src/db/client.js";
-import { getUserByUsername } from "../src/sleeper/client.js";
+import { getLeagueUsers, getUserByUsername } from "../src/sleeper/client.js";
 
 const getUser = vi.mocked(getUserByUsername);
+const getMembers = vi.mocked(getLeagueUsers);
 const findFirst = vi.mocked(prisma.user.findFirst);
 const create = vi.mocked(prisma.user.create);
 
@@ -29,6 +31,7 @@ const validBody = {
   lastName: "H",
   email: "Alex@Example.com",
   sleeperUsername: "alexh",
+  sleeperLeagueId: "L1",
 };
 
 const sleeperUser = { user_id: "12345", username: "alexh", display_name: "AlexH" };
@@ -41,6 +44,7 @@ function dbRow() {
     email: "alex@example.com",
     sleeperUserId: "12345",
     sleeperUsername: "alexh",
+    sleeperLeagueId: "L1",
     displayName: "AlexH",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -67,8 +71,19 @@ it("returns 422 when the Sleeper username doesn't exist", async () => {
   expect(res.statusCode).toBe(422);
 });
 
+it("returns 422 when the user isn't a member of the league", async () => {
+  getUser.mockResolvedValue(sleeperUser);
+  getMembers.mockResolvedValue([
+    { user_id: "99999", username: "someoneelse", display_name: "Someone" },
+  ]);
+  const res = await app.inject({ method: "POST", url: "/register", payload: validBody });
+  expect(res.statusCode).toBe(422);
+  expect(create).not.toHaveBeenCalled();
+});
+
 it("returns 409 when the email or Sleeper user already exists", async () => {
   getUser.mockResolvedValue(sleeperUser);
+  getMembers.mockResolvedValue([sleeperUser]);
   findFirst.mockResolvedValue(dbRow());
   const res = await app.inject({ method: "POST", url: "/register", payload: validBody });
   expect(res.statusCode).toBe(409);
@@ -76,6 +91,7 @@ it("returns 409 when the email or Sleeper user already exists", async () => {
 
 it("returns 201 with an API key on success", async () => {
   getUser.mockResolvedValue(sleeperUser);
+  getMembers.mockResolvedValue([sleeperUser]);
   findFirst.mockResolvedValue(null);
   create.mockResolvedValue(dbRow());
 
@@ -86,9 +102,12 @@ it("returns 201 with an API key on success", async () => {
   // A signed JWT: three base64url segments.
   expect(body.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
   expect(body.user.sleeperUserId).toBe("12345");
+  expect(body.user.sleeperLeagueId).toBe("L1");
 
-  // Email was normalized to lowercase before persisting.
+  // Email was normalized to lowercase, and the league id was persisted.
   expect(create).toHaveBeenCalledWith(
-    expect.objectContaining({ data: expect.objectContaining({ email: "alex@example.com" }) }),
+    expect.objectContaining({
+      data: expect.objectContaining({ email: "alex@example.com", sleeperLeagueId: "L1" }),
+    }),
   );
 });

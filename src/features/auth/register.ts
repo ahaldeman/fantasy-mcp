@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { AuthUser } from "./authenticate.js";
 import { issueToken } from "./token.js";
 import { prisma } from "../../db/client.js";
-import { getUserByUsername } from "../../sleeper/client.js";
+import { getLeagueUsers, getUserByUsername } from "../../sleeper/client.js";
 
 const registerBody = z.object({
   firstName: z.string().trim().min(1),
@@ -16,6 +16,7 @@ const registerBody = z.object({
     .transform((value) => value.trim().toLowerCase())
     .pipe(z.email()),
   sleeperUsername: z.string().trim().min(1),
+  sleeperLeagueId: z.string().trim().min(1),
 });
 
 function formatIssues(error: z.ZodError): string[] {
@@ -32,13 +33,26 @@ export function registerRoutes(app: FastifyInstance): void {
         .code(400)
         .send({ error: "Invalid request", issues: formatIssues(parsed.error) });
     }
-    const { firstName, lastName, email, sleeperUsername } = parsed.data;
+    const { firstName, lastName, email, sleeperUsername, sleeperLeagueId } =
+      parsed.data;
 
     const sleeperUser = await getUserByUsername(sleeperUsername);
     if (sleeperUser === null) {
       return reply
         .code(422)
         .send({ error: `Sleeper user "${sleeperUsername}" not found` });
+    }
+
+    // The league must exist and the user must be a member of it, so every
+    // league-scoped tool later resolves their roster by owner_id.
+    const leagueMembers = await getLeagueUsers(sleeperLeagueId);
+    const isMember = leagueMembers.some(
+      (member) => member.user_id === sleeperUser.user_id,
+    );
+    if (!isMember) {
+      return reply.code(422).send({
+        error: `Sleeper user "${sleeperUsername}" is not a member of league "${sleeperLeagueId}"`,
+      });
     }
 
     // Clear, field-specific conflict before we try to write.
@@ -60,6 +74,7 @@ export function registerRoutes(app: FastifyInstance): void {
           email,
           sleeperUserId: sleeperUser.user_id,
           sleeperUsername: sleeperUser.username,
+          sleeperLeagueId,
           displayName: sleeperUser.display_name || sleeperUser.username,
         },
       });
@@ -71,6 +86,7 @@ export function registerRoutes(app: FastifyInstance): void {
         email: user.email,
         sleeperUserId: user.sleeperUserId,
         sleeperUsername: user.sleeperUsername,
+        sleeperLeagueId: user.sleeperLeagueId,
         displayName: user.displayName,
       };
       const token = await issueToken(authUser);
