@@ -38,6 +38,9 @@ Environment variables (see `.env.example`):
 | `LOG_LEVEL` | `info` | Fastify/pino log level |
 | `SLEEPER_API_BASE_URL` | `https://api.sleeper.app/v1` | Sleeper API base (override to point at a stub) |
 | `JWT_SECRET` | — (required) | HS256 signing secret for auth tokens (min 32 chars); rotate to revoke all tokens |
+| `PLAYERS_SYNC_CRON` | `0 9 * * *` | Cron for the daily players sync |
+| `PLAYERS_SYNC_TZ` | `America/New_York` | Timezone for the sync cron |
+| `PLAYERS_SNAPSHOT_RETENTION_DAYS` | `14` | How many daily raw snapshots to keep |
 
 ## Run
 
@@ -98,6 +101,22 @@ Streamable HTTP MCP clients pass custom headers, so the token rides in `Authoriz
 }
 ```
 
+## Players data
+
+Sleeper's `players/nfl` endpoint returns the whole NFL catalog (~14MB, ~12k players) in one call, meant to be pulled at most daily. A scheduled job caches it locally:
+
+1. Fetches the payload once a day (`PLAYERS_SYNC_CRON` / `PLAYERS_SYNC_TZ`).
+2. Backs up the raw payload as a dated row in `PlayerSnapshot` (jsonb, kept for `PLAYERS_SNAPSHOT_RETENTION_DAYS`).
+3. Refreshes the curated `Player` table to mirror it, in one transaction.
+
+Scheduling runs on **pg-boss** (Postgres-backed), inside the app process. If you run multiple app instances, pg-boss coordinates through Postgres so exactly one instance runs each fired job. It manages its own `pgboss` schema, separate from Prisma migrations. In production it needs a session-capable Postgres connection (direct, or a session-mode pooler), not PgBouncer transaction mode.
+
+Run it by hand any time:
+
+```bash
+npm run job:sync-players
+```
+
 ## Tests
 
 ```bash
@@ -112,6 +131,7 @@ npm run test:watch
 | `npm run dev` | Run with `tsx watch` |
 | `npm run build` | Compile to `dist/` with `tsc` |
 | `npm start` | Run compiled `dist/index.js` |
+| `npm run job:sync-players` | Run the players sync once (manual/external trigger) |
 | `npm test` | Run Vitest once |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run db:migrate` | Apply migrations in development (`prisma migrate dev`) |
@@ -133,7 +153,12 @@ src/
   routes/
     register.ts     POST /register
   sleeper/
-    client.ts       Sleeper REST client (getUserByUsername)
+    client.ts       Sleeper REST client (getUserByUsername, getAllPlayers)
+  players/
+    sync.ts         syncPlayers(): snapshot + refresh the Player table
+  jobs/
+    scheduler.ts    pg-boss: schedules and runs the daily sync
+    runSyncPlayers.ts  one-shot CLI entrypoint
   mcp/
     server.ts       createMcpServer(authUser): registers tools
     tools/          one file per tool

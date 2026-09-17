@@ -24,3 +24,39 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// Curated NFL player, refreshed daily from Sleeper's players/nfl payload.
+// Nullable fields reflect genuine Sleeper absence: team is null for free
+// agents; names are null for team-defense (DEF) rows whose id is a team code;
+// bio fields are missing for many players.
+model Player {
+  id               String   @id // Sleeper player_id (e.g. "19", or "CIN" for a DEF)
+  firstName        String?
+  lastName         String?
+  fullName         String?
+  searchFullName   String?
+  position         String?
+  team             String?
+  fantasyPositions String[] @default([])
+  status           String?
+  injuryStatus     String?
+  age              Int?
+  yearsExp         Int?
+  number           Int?
+  active           Boolean
+  updatedAt        DateTime @updatedAt
+
+  @@index([team])
+  @@index([position])
+  @@index([searchFullName])
+}
+
+// Raw daily backup of the players/nfl payload, one row per day.
+model PlayerSnapshot {
+  id          String   @id @default(cuid())
+  capturedOn  DateTime @unique @db.Date
+  source      String
+  playerCount Int
+  payload     Json
+  createdAt   DateTime @default(now())
+}

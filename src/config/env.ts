@@ -18,6 +18,11 @@ const envSchema = z.object({
   // HS256 signing secret for auth tokens. Rotating this invalidates every
   // issued token at once (the revocation escape hatch). Min 32 chars.
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
+  // Daily players-sync schedule (cron) and its timezone.
+  PLAYERS_SYNC_CRON: z.string().min(1).default("0 9 * * *"),
+  PLAYERS_SYNC_TZ: z.string().min(1).default("America/New_York"),
+  // How many daily PlayerSnapshot rows to keep.
+  PLAYERS_SNAPSHOT_RETENTION_DAYS: z.coerce.number().int().positive().default(14),
 });
 
 export type Env = z.infer<typeof envSchema>;
