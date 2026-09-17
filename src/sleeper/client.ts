@@ -1,5 +1,10 @@
 import { env } from "../config/env.js";
-import { SleeperLeague, SleeperRawPlayer, SleeperUser } from "./types.js";
+import {
+  SleeperLeague,
+  SleeperRawPlayer,
+  SleeperRoster,
+  SleeperUser,
+} from "./types.js";
 
 // GET /v1/user/<username>. Sleeper returns the user object, or a `null` body
 // (sometimes a 404) when the username doesn't exist. Both map to null here.
@@ -71,6 +76,40 @@ export async function getLeaguesForUser(
   return body.map((league) => ({
     league_id: league.league_id,
     name: league.name,
+  }));
+}
+
+// GET /v1/league/<league_id>/rosters. Returns every team's roster in the
+// league, or an empty array when the league has none (null body). Sleeper
+// sometimes sends null for players/starters; those are normalized to []. Any
+// non-OK response is a real error and throws.
+export async function getRosters(leagueId: string): Promise<SleeperRoster[]> {
+  const url = `${env.SLEEPER_API_BASE_URL}/league/${encodeURIComponent(leagueId)}/rosters`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Sleeper API error: ${res.status} ${res.statusText}`);
+  }
+
+  const body = (await res.json()) as
+    | Array<{
+        roster_id: number;
+        owner_id: string | null;
+        players: string[] | null;
+        starters: string[] | null;
+        reserve: string[] | null;
+        taxi: string[] | null;
+      }>
+    | null;
+  if (body === null) {
+    return [];
+  }
+  return body.map((roster) => ({
+    roster_id: roster.roster_id,
+    owner_id: roster.owner_id,
+    players: roster.players ?? [],
+    starters: roster.starters ?? [],
+    injuredReserve: roster.reserve ?? [],
+    taxiSquad: roster.taxi ?? [],
   }));
 }
 

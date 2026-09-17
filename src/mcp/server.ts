@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import type { AuthUser } from "../features/auth/authenticate.js";
+import { registerRosterTool } from "../features/roster/tools.js";
 import { registerPingTool } from "./tools/ping.js";
 
 // Build a fresh MCP server with all tools registered. In stateless HTTP mode we
@@ -14,6 +15,7 @@ export function createMcpServer(authUser: AuthUser): McpServer {
   });
 
   registerPingTool(server, authUser);
+  registerRosterTool(server, authUser);
 
   return server;
 }

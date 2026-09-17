@@ -1,6 +1,10 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { getLeaguesForUser, getUserByUsername } from "../src/sleeper/client.js";
+import {
+  getLeaguesForUser,
+  getRosters,
+  getUserByUsername,
+} from "../src/sleeper/client.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -72,4 +76,32 @@ it("returns an empty array when the user is in no leagues (null body)", async ()
 it("throws when the leagues call returns a non-OK response", async () => {
   mockFetch(new Response("", { status: 500, statusText: "Server Error" }));
   await expect(getLeaguesForUser("12345", "2026")).rejects.toThrow(/Sleeper API error: 500/);
+});
+
+it("returns mapped rosters, coalescing null players/starters to []", async () => {
+  mockFetch(
+    new Response(
+      JSON.stringify([
+        { roster_id: 1, owner_id: "U1", players: ["a", "b"], starters: ["a", "0"], reserve: ["b"], taxi: [] },
+        { roster_id: 2, owner_id: null, players: null, starters: null, reserve: null, taxi: null },
+      ]),
+      { status: 200 },
+    ),
+  );
+
+  const rosters = await getRosters("L1");
+  expect(rosters).toEqual([
+    { roster_id: 1, owner_id: "U1", players: ["a", "b"], starters: ["a", "0"], injuredReserve: ["b"], taxiSquad: [] },
+    { roster_id: 2, owner_id: null, players: [], starters: [], injuredReserve: [], taxiSquad: [] },
+  ]);
+});
+
+it("returns an empty array when the rosters body is null", async () => {
+  mockFetch(new Response("null", { status: 200 }));
+  expect(await getRosters("L1")).toEqual([]);
+});
+
+it("throws when the rosters call returns a non-OK response", async () => {
+  mockFetch(new Response("", { status: 500, statusText: "Server Error" }));
+  await expect(getRosters("L1")).rejects.toThrow(/Sleeper API error: 500/);
 });

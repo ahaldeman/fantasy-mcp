@@ -13,6 +13,22 @@ export interface SleeperLeague {
   name: string;
 }
 
+// A team's roster in a league. `owner_id` is genuinely absent for orphan teams.
+// `starters` is slot-ordered and carries "0" in empty slots; `players` is the
+// full set of rostered ids and is a superset of `injuredReserve` and
+// `taxiSquad` (the dynasty taxi squad). All the arrays are normalized to []
+// from Sleeper's nulls; leagues without IR/taxi slots just have empty ones.
+// (Sleeper's raw fields for the last two are `reserve` and `taxi`; we map to
+// the full domain terms.)
+export interface SleeperRoster {
+  roster_id: number;
+  owner_id: string | null;
+  players: string[];
+  starters: string[];
+  injuredReserve: string[];
+  taxiSquad: string[];
+}
+
 // The players/nfl fields we curate. Sleeper omits most of these freely, so
 // everything past the id is optional here.
 export interface SleeperRawPlayer {
