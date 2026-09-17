@@ -1,12 +1,5 @@
 import { env } from "../config/env.js";
-
-// Only the fields we use. Sleeper returns more (avatar, etc.); we don't store
-// them, so we keep the type to what we consume.
-export interface SleeperUser {
-  user_id: string;
-  username: string;
-  display_name: string;
-}
+import { SleeperLeague, SleeperRawPlayer, SleeperUser } from "./types.js";
 
 // GET /v1/user/<username>. Sleeper returns the user object, or a `null` body
 // (sometimes a 404) when the username doesn't exist. Both map to null here.
@@ -35,23 +28,27 @@ export async function getUserByUsername(
   };
 }
 
-// The players/nfl fields we curate. Sleeper omits most of these freely, so
-// everything past the id is optional here.
-export interface SleeperRawPlayer {
-  player_id?: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  full_name?: string | null;
-  search_full_name?: string | null;
-  position?: string | null;
-  team?: string | null;
-  fantasy_positions?: string[] | null;
-  status?: string | null;
-  injury_status?: string | null;
-  age?: number | null;
-  years_exp?: number | null;
-  number?: number | null;
-  active?: boolean | null;
+// GET /v1/user/<user_id>/leagues/nfl/<season>. Returns the user's leagues for
+// that season, or an empty array when they're in none. Any non-OK response is a
+// real error and throws.
+export async function getLeaguesForUser(
+  userId: string,
+  season: string,
+): Promise<SleeperLeague[]> {
+  const url = `${env.SLEEPER_API_BASE_URL}/user/${encodeURIComponent(userId)}/leagues/nfl/${encodeURIComponent(season)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Sleeper API error: ${res.status} ${res.statusText}`);
+  }
+
+  const body = (await res.json()) as SleeperLeague[] | null;
+  if (body === null) {
+    return [];
+  }
+  return body.map((league) => ({
+    league_id: league.league_id,
+    name: league.name,
+  }));
 }
 
 // GET /v1/players/nfl. Returns the full catalog keyed by player_id (~14MB).

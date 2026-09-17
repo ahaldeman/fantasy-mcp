@@ -30,6 +30,6 @@ The connection URL lives in `prisma.config.ts` (not `schema.prisma`); the Prisma
 
 Full details and the allowed exceptions: @.claude/rules/typescript.md
 
-**Feature-first packages.** Each domain is a vertical slice under `src/features/<domain>/` holding its own source (Sleeper calls), repository (persistence/queries), sync (job logic), and tools (MCP), following the flow Sleeper -> internal domain -> MCP. Shared infra (`config`, `db`, the `sleeper` client, and the `mcp`/`jobs`/`server` composition roots) stays at the top of `src/`. A feature may import shared infra and another feature's repository, never another feature's tools/routes.
+**Feature-first packages.** Each domain is a vertical slice under `src/features/<domain>/` holding its own repository (persistence/queries), sync (job logic), and tools (MCP), following the flow Sleeper -> internal domain -> MCP. Sleeper calls live in the shared `sleeper/client.ts` (types in `sleeper/types.ts`), and features import them. Shared infra (`config`, `db`, the `sleeper` client, and the `mcp`/`jobs`/`server` composition roots) stays at the top of `src/`. A feature may import shared infra and another feature's repository, never another feature's tools/routes.
 
 Full details: @.claude/rules/structure.md

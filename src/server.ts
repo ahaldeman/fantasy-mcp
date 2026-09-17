@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { env } from "./config/env.js";
 import { authenticateRequest } from "./features/auth/authenticate.js";
 import { registerRoutes } from "./features/auth/register.js";
+import { leagueRoutes } from "./features/league/routes.js";
 import { createMcpServer } from "./mcp/server.js";
 
 // JSON-RPC error returned for transports/methods we don't support in stateless mode.
@@ -26,7 +27,8 @@ export function buildServer(): FastifyInstance {
   // Plain liveness check. No MCP handshake required, easy to test with inject().
   app.get("/health", async () => ({ status: "ok" }));
 
-  // Open route: register to get an API key.
+  // Open routes: discover your leagues, then register to get an API key.
+  leagueRoutes(app);
   registerRoutes(app);
 
   // Stateless Streamable HTTP: a fresh MCP server + transport per POST, built

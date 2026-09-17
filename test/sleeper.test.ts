@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { getUserByUsername } from "../src/sleeper/client.js";
+import { getLeaguesForUser, getUserByUsername } from "../src/sleeper/client.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -44,4 +44,32 @@ it("returns null on a 404", async () => {
 it("throws on other non-OK responses", async () => {
   mockFetch(new Response("", { status: 500, statusText: "Server Error" }));
   await expect(getUserByUsername("alexh")).rejects.toThrow(/Sleeper API error: 500/);
+});
+
+it("returns the mapped leagues for a user", async () => {
+  mockFetch(
+    new Response(
+      JSON.stringify([
+        { league_id: "L1", name: "Dynasty", season: "2026", extra: "x" },
+        { league_id: "L2", name: "Redraft", season: "2026" },
+      ]),
+      { status: 200 },
+    ),
+  );
+
+  const leagues = await getLeaguesForUser("12345", "2026");
+  expect(leagues).toEqual([
+    { league_id: "L1", name: "Dynasty" },
+    { league_id: "L2", name: "Redraft" },
+  ]);
+});
+
+it("returns an empty array when the user is in no leagues (null body)", async () => {
+  mockFetch(new Response("null", { status: 200 }));
+  expect(await getLeaguesForUser("12345", "2026")).toEqual([]);
+});
+
+it("throws when the leagues call returns a non-OK response", async () => {
+  mockFetch(new Response("", { status: 500, statusText: "Server Error" }));
+  await expect(getLeaguesForUser("12345", "2026")).rejects.toThrow(/Sleeper API error: 500/);
 });
