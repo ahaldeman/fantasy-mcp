@@ -26,6 +26,19 @@ model User {
   updatedAt       DateTime @updatedAt
 }
 
+// A league's settings, cached from Sleeper's GET /league/<id>. These are
+// effectively fixed for a season, so callers read from here first and only hit
+// Sleeper on a miss. id is the Sleeper league_id; scoringSettings is Sleeper's
+// stat-key to point-value map (e.g. rec: 1 for PPR).
+model League {
+  id              String   @id
+  name            String
+  season          String
+  scoringSettings Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 // Curated NFL player, refreshed daily from Sleeper's players/nfl payload.
 // Nullable fields reflect genuine Sleeper absence: team is null for free
 // agents; names are null for team-defense (DEF) rows whose id is a team code;

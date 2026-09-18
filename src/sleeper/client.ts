@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
 import {
   SleeperLeague,
+  SleeperLeagueSettings,
   SleeperRawPlayer,
   SleeperRoster,
   SleeperUser,
@@ -30,6 +31,33 @@ export async function getUserByUsername(
     user_id: body.user_id,
     username: body.username,
     display_name: body.display_name,
+  };
+}
+
+// GET /v1/league/<league_id>. Returns the league's settings, or null when the
+// league doesn't exist (404 or null body). Any other non-OK response throws.
+export async function getLeague(
+  leagueId: string,
+): Promise<SleeperLeagueSettings | null> {
+  const url = `${env.SLEEPER_API_BASE_URL}/league/${encodeURIComponent(leagueId)}`;
+  const res = await fetch(url);
+
+  if (res.status === 404) {
+    return null;
+  }
+  if (!res.ok) {
+    throw new Error(`Sleeper API error: ${res.status} ${res.statusText}`);
+  }
+
+  const body = (await res.json()) as SleeperLeagueSettings | null;
+  if (body === null) {
+    return null;
+  }
+  return {
+    league_id: body.league_id,
+    name: body.name,
+    season: body.season,
+    scoring_settings: body.scoring_settings,
   };
 }
 

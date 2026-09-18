@@ -13,6 +13,17 @@ export interface SleeperLeague {
   name: string;
 }
 
+// A league's settings, fetched from GET /league/<id>. These are effectively
+// fixed for a season, so they're a good candidate to cache by league_id.
+// `scoring_settings` is a map of stat key to point value (e.g. `rec: 1` for
+// PPR); Sleeper returns ~80 keys.
+export interface SleeperLeagueSettings {
+  league_id: string;
+  name: string;
+  season: string;
+  scoring_settings: Record<string, number>;
+}
+
 // A team's roster in a league. `owner_id` is genuinely absent for orphan teams.
 // `starters` is slot-ordered and carries "0" in empty slots; `players` is the
 // full set of rostered ids and is a superset of `injuredReserve` and
