@@ -3,7 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 
 import { env } from "./config/env.js";
 import { authenticateRequest } from "./features/auth/authenticate.js";
-import { registerRoutes } from "./features/auth/register.js";
+import { authRoutes } from "./features/auth/routes.js";
 import { leagueRoutes } from "./features/league/routes.js";
 import { createMcpServer } from "./mcp/server.js";
 
@@ -29,7 +29,7 @@ export function buildServer(): FastifyInstance {
 
   // Open routes: discover your leagues, then register to get an API key.
   leagueRoutes(app);
-  registerRoutes(app);
+  authRoutes(app);
 
   // Stateless Streamable HTTP: a fresh MCP server + transport per POST, built
   // only after the request is authenticated with a valid API key.

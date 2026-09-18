@@ -18,6 +18,8 @@ vi.mock("../src/db/client.js", () => ({
 import { buildServer } from "../src/server.js";
 import { prisma } from "../src/db/client.js";
 import { getLeagueUsers, getUserByUsername } from "../src/sleeper/client.js";
+import { issueToken } from "../src/features/auth/token.js";
+import type { AuthUser } from "../src/features/auth/authenticate.js";
 
 const getUser = vi.mocked(getUserByUsername);
 const getMembers = vi.mocked(getLeagueUsers);
@@ -110,4 +112,41 @@ it("returns 201 with an API key on success", async () => {
       data: expect.objectContaining({ email: "alex@example.com", sleeperLeagueId: "L1" }),
     }),
   );
+});
+
+const authUser: AuthUser = {
+  id: "u1",
+  firstName: "Alex",
+  lastName: "H",
+  email: "alex@example.com",
+  sleeperUserId: "12345",
+  sleeperUsername: "alexh",
+  sleeperLeagueId: "L1",
+  displayName: "AlexH",
+};
+
+it("GET /me returns 401 without an Authorization header", async () => {
+  const res = await app.inject({ method: "GET", url: "/me" });
+  expect(res.statusCode).toBe(401);
+  expect(res.headers["www-authenticate"]).toBe("Bearer");
+});
+
+it("GET /me returns 401 for a Bearer value that isn't a valid token", async () => {
+  const res = await app.inject({
+    method: "GET",
+    url: "/me",
+    headers: { authorization: "Bearer not.a.valid.jwt" },
+  });
+  expect(res.statusCode).toBe(401);
+});
+
+it("GET /me returns the decoded user for a valid token", async () => {
+  const token = await issueToken(authUser);
+  const res = await app.inject({
+    method: "GET",
+    url: "/me",
+    headers: { authorization: `Bearer ${token}` },
+  });
+  expect(res.statusCode).toBe(200);
+  expect(res.json().user).toEqual(authUser);
 });

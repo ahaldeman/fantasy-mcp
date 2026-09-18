@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import type { AuthUser } from "./authenticate.js";
+import { authenticateRequest, type AuthUser } from "./authenticate.js";
 import { issueToken } from "./token.js";
 import { prisma } from "../../db/client.js";
 import { getLeagueUsers, getUserByUsername } from "../../sleeper/client.js";
@@ -25,7 +25,7 @@ function formatIssues(error: z.ZodError): string[] {
   );
 }
 
-export function registerRoutes(app: FastifyInstance): void {
+export function authRoutes(app: FastifyInstance): void {
   app.post("/register", async (request, reply) => {
     const parsed = registerBody.safeParse(request.body);
     if (!parsed.success) {
@@ -102,5 +102,16 @@ export function registerRoutes(app: FastifyInstance): void {
       }
       throw err;
     }
+  });
+
+  app.get("/me", async (request, reply) => {
+    const user = await authenticateRequest(request.headers.authorization);
+    if (user === null) {
+      return reply
+        .code(401)
+        .header("WWW-Authenticate", "Bearer")
+        .send({ error: "Unauthorized" });
+    }
+    return reply.send({ user });
   });
 }
